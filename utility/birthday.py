@@ -22,7 +22,7 @@ class Birthday(Field):
         Field(class): parent class
     '''
     
-    # function used as a decorator to catch errors when value is setting
+    # Function used as a decorator to catch errors when value is setting
     def _value_error(func):
         def inner(self, value):
             try:
