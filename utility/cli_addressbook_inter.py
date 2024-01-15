@@ -5,11 +5,100 @@ from utility.record import Record
 from utility.email import Email
 from utility.birthday import Birthday
 from utility.address import Address
+from utility.addressbook import AddressBook
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import FuzzyWordCompleter
 from pathlib import Path
+
 # Erorr handler
- 
+ADDRESSBOOK = AddressBook() 
+
+ # Function to display the menu
+def show_menu(menu_options):
+    max_option_length = max(len(item['option']) for item in menu_options) 
+    print("Options:".ljust(max_option_length + 5), "Command:")
+    print("-" * (max_option_length + 24))
+    for _, item in enumerate(menu_options): ## tutaj index, option
+        print(f"{item['option'].ljust(max_option_length + 5)} {item['command']}")
+    print("-" * (max_option_length + 24))
+
+# Function for receiving user commands in a command-line interface
+def user_command_input(completer, menu_name=""):
+    commands_completer = FuzzyWordCompleter(completer.words)
+    user_input = prompt(f"{menu_name} >>> ", completer=commands_completer).strip()
+    if user_input:
+        return parse_command(user_input)
+    return "", ""
+
+
+def execute_commands(commands_dict: dict, cmd: str, addressbook, *arguments):
+
+    """Function to execute user commands
+
+    Args:
+        menu_commands (dict): dict for menu-specific commands
+        cmd (str): user command
+        data_to_use: dict (for addressbook) or list (for notes) or None (for rest) to use in calling functions
+        arguments (tuple): arguments from user input
+
+    Returns:
+        func: function with data_ti_use and arguments
+    """
+
+    if cmd not in commands_dict:
+        return f"Command {cmd} is not recognized"
+    cmd_func = commands_dict.get(cmd)
+    return cmd_func(addressbook, *arguments)
+
+
+# Function that parses user input commands
+def parse_command(user_input: str) -> (str, str):
+    
+    """
+    "Process user input and return relevant information.
+
+    Args:
+        user_input (str): user input command
+    
+    Returns:
+        str: command
+        tuple: arguments
+    """
+
+    tokens = user_input.split()
+    command = tokens[0].lower()
+    argument = "".join(tokens[1:])
+    return command, argument
+
+
+
+
+# # Main menu function for the command-line interface
+# def main_menu(commands_dict, menu_name=""):
+#     while True:
+#         cmd, arguments = user_command_input(commands_dict, menu_name)
+#         print(execute_commands(commands_dict, cmd, arguments))
+
+
+
+
+def cli_addressbook_menu(*args):        ### w starym projekcie def addressbook_commands(*args):
+    menu_options = [
+        {"option": "Add Record", "command": "add"}, ## to jest item
+        {"option": "Show Specific Record", "command": "show <name>"},
+        {"option": "Main Menu", "command": "up"}, 
+        {"option": "Program exit", "command": "exit"},
+        {"option": "Edit Record", "command": "edit"},
+    ]
+
+    show_menu(menu_options)
+    completer = FuzzyWordCompleter(list(ADDRESSBOOK_MENU_COMMANDS.keys()))
+    while True:
+        cmd, arguments = user_command_input(completer, "address book")
+        print(execute_commands(ADDRESSBOOK_MENU_COMMANDS, cmd, ADDRESSBOOK, *arguments))
+
+
+
 
 def add_name(addressbook): ## obiektem lub strukturą danych, która reprezentuje książkę adresową. Przekazując ją jako argument do funkcji, można manipulować danymi książki adresowej wewnątrz funkcji, a zmiany dokonane w tej funkcji będą miały wpływ na oryginalny obiekt książki adresowej poza funkcją
     while True:
@@ -48,7 +137,18 @@ def add_address():
     return Address(street, city, zip_code, country)
 
 
- # dict for create_record commands
+
+
+
+
+
+
+
+
+
+
+
+# dict for create_record commands
 CREATE_RECORD_COMMANDS = {
     "phones": add_phone,
     "emails": add_email,
@@ -65,26 +165,35 @@ def create_record(name):
     while True:
         add_phone_choice = input(("Type Y (yes) if you want to add phone number: ").strip().lower())
         if add_phone_choice == "y" or add_phone_choice == "yes":
-            phone = add_phone()
-            if phone is not None:
-                phones.append(phone)
-                add_phone_choice = (input("Type Y (yes) if you want to add another phone number: ").strip().lower())
-                if add_phone_choice == "y" or add_phone_choice == "yes":
-                    continue
-            break
+            while True:
+                phone = add_phone()
+                if phone is not None:
+                    phones.append(phone)
+                    add_phone_choice = (input("Type Y (yes) if you want to add another phone number: ").strip().lower())
+                    if add_phone_choice == "y" or add_phone_choice == "yes":
+                        continue
+                break
         break
 
     while True:
         add_email_choice = input("Type Y (yes) if you want to add email: ").strip().lower()
+        
         if add_email_choice == "y" or add_email_choice == "yes":
-            email = add_email()
-            if email is not None:
-                emails.append(email)
-                add_email_choice = (input("Type Y (yes) if you want to add another email: ").strip().upper())
-                if add_email_choice == "y" or add_email_choice == "yes":
-                    continue
+            while True:
+                email = add_email()
+                if email is not None:
+                    emails.append(email)
+                    
+                    add_email_choice = input("Type Y (yes) if you want to add another email: ").strip().lower()
+                    
+                    if add_email_choice == "y" or add_email_choice == "yes":
+                        continue
+                    elif add_email_choice != "y" and add_email_choice != "yes":
+                        break
+                else:
+                    break
             break
-        break
+
 
     add_bday_choice = input("Type Y (yes) if you want to add birthday: ").strip().lower()
     if add_bday_choice == "y" or add_bday_choice == "yes":
@@ -95,6 +204,8 @@ def create_record(name):
         address = add_address()
     
     return Record(name, phones, emails, birthday, address)
+
+
 
 def add_record(addressbook, *args):
     if len(args) == 0:
@@ -138,11 +249,18 @@ def edit_phone(addressbook, record):
 # dict for menu edit handler
 EDIT_COMMANDS = {
     "name": edit_name, 
-    # "phone": edit_phone, 
+     "phone": edit_phone, 
     # "email": edit_email,
     # "address": edit_address,
     # "birthday": edit_birthday,
     }
+
+
+
+
+
+
+
 
 
 def edit_record(addresbook, record):
@@ -165,12 +283,6 @@ def export_to_csv(addressbook, filename):
 
 
 
-
-
-
-
-
-
 def save_addressbook(addressbook, filename):
     addressbook.save_addressbook(filename)
     return "Addressbook saved"
@@ -178,7 +290,6 @@ def save_addressbook(addressbook, filename):
 def load_addressbook_addressbook(addresbook, filename):
     addressbook = addressbook.load_addressbook(filename)
     return f" Addressbook loaded form file(filename)"
-
 
 
 # dict for addressbook menu
@@ -197,92 +308,6 @@ ADDRESSBOOK_MENU_COMMANDS = {
         "help": help,
     }
 
-# dict for addressbook menu
-ADDRESSBOOK_COMMANDS = {
-    # "exit": cli_pyassist_exit,
-    "add": add_record, #lambda *args: add_record(ADDRESSBOOK, *args),
-     #"edit": edit_record, #lambda *args: edit_record(ADDRESSBOOK, *args),
-    # "show": show, #lambda *args: show(ADDRESSBOOK, *args),
-    # "delete": del_record, #lambda *args: del_record(ADDRESSBOOK, *args),
-    "export": export_to_csv, #lambda *args: export_to_csv(ADDRESSBOOK, *args),
-    # "import": import_from_csv, #lambda *args: import_from_csv(ADDRESSBOOK, *args),
-    # "birthday": show_upcoming_birthday, #lambda *args: show_upcoming_birthday(ADDRESSBOOK, *args),
-    # "search": search, #lambda *args: search(ADDRESSBOOK, *args),
-    # "up": pyassist_main_menu,
-    # "help": addressbook_menu,
-}
-
-def execute_commands(commands_dict: dict, cmd: str, argument):
-
-    """Function to execute user commands
-
-    Args:
-        menu_commands (dict): dict for menu-specific commands
-        cmd (str): user command
-        data_to_use: dict (for addressbook) or list (for notes) or None (for rest) to use in calling functions
-        arguments (tuple): arguments from user input
-
-    Returns:
-        func: function with data_ti_use and arguments
-    """
-
-    if cmd not in commands_dict:
-        return f"Command {cmd} is not recognized"
-    cmd_func = commands_dict[cmd]
-    return cmd_func(argument)
-
-
-# Function that parses user input commands
-def parse_command(user_input: str) -> (str, str):
-    
-    """
-    "Process user input and return relevant information.
-
-    Args:
-        user_input (str): user input command
-    
-    Returns:
-        str: command
-        tuple: arguments
-    """
-
-    tokens = user_input.split()
-    command = tokens[0].lower()
-    argument = "".join(tokens[1:])
-    return command, argument
-
-
-
-# Function for receiving user commands in a command-line interface
-def user_command_input(ADDRESSBOOK_MENU_COMMANDS,menu_name=""):
-    commands_completer = FuzzyWordCompleter(ADDRESSBOOK_MENU_COMMANDS.keys())
-    user_input = prompt(f"{menu_name} >>> ", completer = commands_completer).strip()
-    if user_input:
-        return parse_command(user_input)
-    return "", ""
-
-
-def cli_addressbook_menu():     ## obsługa interfejsu wiersza poleceń (CLI) 
-    while True:
-        cmd, argument = user_command_input()
-        if cmd == "up":
-            return "back to previous (main) menu"
-        print(execute_commands(ADDRESSBOOK_MENU_COMMANDS, cmd, argument))
-
-
-
-# def main():
-#     # Inicjalizacja obiektu AddressBook
-#     ADDRESSBOOK = AddressBook()
-
-#     # Wczytaj dane z pliku, jeśli istnieje
-#     ADDRESSBOOK_DATA_PATH = "ścieżka/do/twojej/książki/adresowej.dat"
-#     ADDRESSBOOK.load_addressbook(ADDRESSBOOK_DATA_PATH)
-
-#     # # Przekaż ADDRESSBOOK jako argument do funkcji addressbook_interaction
-#     addressbook_interaction(ADDRESSBOOK)
-
-    # # Zapisz książkę adresową po zakończeniu działania programu
 
 
 
@@ -301,25 +326,7 @@ def cli_addressbook_menu():     ## obsługa interfejsu wiersza poleceń (CLI)
 
 
 
-####################### Skrypt testowy
-# def main():
-#     address_book = {}
 
-#     while True:
-#         name = add_name(address_book)
-#         if name is None:
-#             break
 
-#         record = Record(name)
-#         create_record(record)
 
-#         address_book[name.value] = record
-
-#     # Wyświetl zawartość książki adresowej
-#     print("\nAddress Book:")
-#     for contact_name, contact_record in address_book.items():
-#         print(f"{contact_name}: {', '.join(phone.value for phone in contact_record.phones)}")
-
-# if __name__ == "__main__":
-#     main()
 

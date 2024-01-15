@@ -17,7 +17,7 @@ class Email(Field):
                 value = value.strip()
                 email_pattern = (r'[a-zA-Z0-9_.]+@[a-zA-Z]+\.[a-zA-Z]{2,}') # 'r"^[a-zA-Z0-9.!#$%&'*+\/=?^_{|}~-]+@a-zA-Z0-9?(?:.a-zA-Z0-9?)*$"`
 
-                if not email_pattern.match(value): ## sprawdzenie czy wartość value pasuje do wzorca
+                if not re.match(email_pattern,value): ## sprawdzenie czy wartość value pasuje do wzorca
                     raise ValueError(f"Invalid e-mail address format: {value}")
                 return func(self, value)
         return inner
